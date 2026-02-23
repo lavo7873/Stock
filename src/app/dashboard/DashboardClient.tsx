@@ -64,7 +64,7 @@ export default function DashboardClient() {
       if (res.ok) {
         const msg = data?.message ?? (data?.dryRun
           ? `Wrap OK (dry run) cho ${data?.report_date ?? 'ngày mới'}. Chưa lưu vì Supabase chưa cấu hình.`
-          : `Đã tạo report cho ${data?.report_date ?? 'ngày mới'}`);
+          : data?.skipped ? `Report đã tồn tại (đã locked).` : `Đã tạo report cho ${data?.report_date ?? 'ngày mới'}`);
         alert(msg);
         if (data?.dryRun && data?.payload) {
           setLatest({ id: 'dry-run', report_date: data.report_date ?? '', payload: data.payload } as ReportRecord);
@@ -91,6 +91,7 @@ export default function DashboardClient() {
   }
 
   const payload = latest?.payload;
+  const intradayPlan = payload?.intradayPlan ?? [];
   const plan = payload?.tomorrowPlan ?? [];
 
   if (loading) {
@@ -157,6 +158,54 @@ export default function DashboardClient() {
               </div>
             </section>
 
+            {/* Intraday Plan (1–2 days) — Top 3 */}
+            {intradayPlan.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold text-[#22c55e] mb-3 font-mono">
+                  INTRADAY (1–2 days) — Top 3
+                </h2>
+                <div className="space-y-4">
+                  {intradayPlan.map((p, i) => (
+                    <div
+                      key={i}
+                      className="rounded-2xl border border-[#30363d] bg-[#161b22] p-5"
+                    >
+                      <h3 className="text-[#22c55e] font-mono font-bold text-lg mb-3">
+                        {p.ticker}
+                      </h3>
+                      <div className="grid grid-cols-3 gap-4 mb-3 font-mono text-sm">
+                        <div>
+                          <span className="text-[#8b949e]">Buy:</span>{' '}
+                          {formatPrice(p.entry)}
+                        </div>
+                        <div>
+                          <span className="text-[#8b949e]">Sell:</span>{' '}
+                          {formatPrice(p.sellTarget)}
+                        </div>
+                        <div>
+                          <span className="text-[#8b949e]">Stop:</span>{' '}
+                          {formatPrice(p.stopLoss)}
+                        </div>
+                      </div>
+                      <p className="text-[#8b949e] text-sm font-mono mb-2">
+                        Hold: {p.hold} · R/R: {p.rr} · Confidence: {p.confidence}
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-[#c9d1d9] mb-1">
+                        {p.why.map((w, j) => (
+                          <li key={j}>{w}</li>
+                        ))}
+                      </ul>
+                      {p.riskFlags.length > 0 && (
+                        <p className="text-amber-400 text-sm font-mono mt-2">
+                          Risk: {p.riskFlags.join(' · ')}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Tomorrow Plan */}
             <section>
               <h2 className="text-lg font-semibold text-[#22c55e] mb-3 font-mono">
@@ -187,6 +236,9 @@ export default function DashboardClient() {
                     </div>
                     <p className="text-[#8b949e] text-sm font-mono mb-2">
                       Hold: {p.hold} · Confidence: {p.confidence}
+                      {p.tpDetail && (
+                        <> · TP1: {formatPrice(p.tpDetail.tp1 ?? 0)} · TP2: {formatPrice(p.tpDetail.tp2 ?? 0)}</>
+                      )}
                     </p>
                     <ul className="list-disc list-inside text-sm text-[#c9d1d9] mb-1">
                       {p.why.map((w, j) => (

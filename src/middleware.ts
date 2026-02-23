@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/sessionCookie';
 
-const COOKIE_NAME = 'psr_admin';
-
-function hasSession(req: NextRequest): boolean {
-  return !!req.cookies.get(COOKIE_NAME)?.value;
-}
-
-export function middleware(req: NextRequest) {
-  const isLoggedIn = hasSession(req);
+export async function middleware(req: NextRequest) {
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const { valid } = token ? await verifySessionToken(token) : { valid: false };
+  const isLoggedIn = valid;
   const isLoginPage = req.nextUrl.pathname === '/login';
 
   if (isLoginPage) {

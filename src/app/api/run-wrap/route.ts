@@ -2,17 +2,7 @@ import { NextResponse } from 'next/server';
 import { hasAuth } from '@/lib/simpleAuth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { runDailyWrap } from '@/lib/wrapEngine';
-
-function getTargetReportDate(): string {
-  const pt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-  const day = pt.getDay(); // 0=Sun, 6=Sat
-  if (day === 0) {
-    pt.setDate(pt.getDate() + 1);
-  } else if (day === 6) {
-    pt.setDate(pt.getDate() + 2);
-  }
-  return pt.toISOString().slice(0, 10);
-}
+import { getTargetReportDate } from '@/lib/ptDate';
 
 function isSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -42,6 +32,24 @@ export async function POST() {
         message: isDemo
           ? 'Đã tạo demo report. Thêm POLYGON_API_KEY hoặc FINNHUB_API_KEY vào .env.local để lấy data thật.'
           : 'Wrap chạy thành công (dry run). Để lưu: cấu hình Supabase và chạy supabase-migration.sql',
+      });
+    }
+
+    const { data: existing } = await supabaseAdmin
+      .from('reports')
+      .select('id')
+      .eq('type', 'daily')
+      .eq('report_date', reportDate)
+      .is('deleted_at', null)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        report_date: reportDate,
+        message: 'Report đã tồn tại cho ngày này (đã locked)',
       });
     }
 

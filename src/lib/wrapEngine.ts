@@ -3,6 +3,7 @@ import { getNews } from '@/lib/providers/newsProvider';
 import {
   STOCK_UNIVERSE,
   type ReportPayload,
+  type IntradayPlanSetup,
   type TomorrowPlanSetup,
   type TrendingStock,
 } from '@/lib/types';
@@ -73,6 +74,11 @@ export function getRegime(spyChange: number): string {
 
 /** Demo payload when no API keys – shows sample data for UI testing */
 export function getDemoPayload(ptDateStr: string): ReportPayload {
+  const demoIntraday: IntradayPlanSetup[] = [
+    { ticker: 'NVDA', setup: 'BREAKOUT', entry: 141.5, sellTarget: 145.2, stopLoss: 138.8, hold: '1–2 days', rr: 1.5, confidence: 'MEDIUM', why: ['Momentum strong', 'Volume spike'], riskFlags: [] },
+    { ticker: 'AMD', setup: 'PULLBACK', entry: 142.0, sellTarget: 146.4, stopLoss: 139.2, hold: '1–2 days', rr: 1.6, confidence: 'HIGH', why: ['EMA20 support', 'RSI healthy'], riskFlags: [] },
+    { ticker: 'TSLA', setup: 'NEWS-DRIVEN', entry: 245.0, sellTarget: 252.0, stopLoss: 240.0, hold: '1–2 days', rr: 1.4, confidence: 'MEDIUM', why: ['Recent news flow'], riskFlags: [] },
+  ];
   const demoPlan: TomorrowPlanSetup[] = [
     { ticker: 'AAPL', setup: 'TREND', entryZone: { low: 225.5, high: 227.2 }, sellTarget: 235.0, stopLoss: 218.0, hold: '3–7 days', confidence: 'HIGH', why: ['EMA20 above EMA50', 'RSI in healthy zone'], riskFlags: [], tpDetail: { tp1: 231.0, tp2: 235.0 } },
     { ticker: 'NVDA', setup: 'PULLBACK', entryZone: { low: 138.0, high: 141.5 }, sellTarget: 150.0, stopLoss: 130.0, hold: '3–7 days', confidence: 'MEDIUM', why: ['MACD bullish', 'Positive 1w momentum'], riskFlags: [], tpDetail: { tp1: 145.0, tp2: 150.0 } },
@@ -97,6 +103,7 @@ export function getDemoPayload(ptDateStr: string): ReportPayload {
       'Hold horizon: 3–7 days',
       'News items: 0 (demo)',
     ],
+    intradayPlan: demoIntraday,
     tomorrowPlan: demoPlan,
     trendingStrong: demoTrending,
     picks: { week: ['AAPL', 'NVDA', 'MSFT', 'GOOGL', 'META'], month: ['AAPL', 'NVDA', 'MSFT', 'GOOGL', 'META'], year: ['AAPL', 'NVDA', 'MSFT', 'GOOGL', 'META'] },
@@ -197,6 +204,49 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
   scored.sort((a, b) => b.score - a.score);
   const top5 = scored.slice(0, 5);
 
+  const intradayCandidates = scored.filter((s) => {
+    const rsiVal = rsi(s.bars.map((x) => x.c));
+    const mom5 = momentum(s.bars.map((x) => x.c), 5);
+    return (rsiVal == null || rsiVal < 80) && (mom5 == null || mom5 > 0) && (s.setup === 'BREAKOUT' || s.setup === 'PULLBACK' || (newsMap[s.ticker]?.length ?? 0) > 0);
+  });
+
+  const intradayPlan: IntradayPlanSetup[] = intradayCandidates.slice(0, 10).map((s) => {
+    const atrVal = atr(s.bars, 14) || s.quote.price * 0.02;
+    const closes = s.bars.map((x) => x.c);
+    const ema20Last = ema(closes, 20).pop() ?? s.quote.price;
+    const resistance = Math.max(...s.bars.slice(-20).map((x) => x.h));
+    const hasNews = (newsMap[s.ticker]?.length ?? 0) > 0;
+    let entry: number;
+    let setup: 'BREAKOUT' | 'PULLBACK' | 'NEWS-DRIVEN' = s.setup === 'BREAKOUT' ? 'BREAKOUT' : s.setup === 'PULLBACK' ? 'PULLBACK' : 'NEWS-DRIVEN';
+    if (s.setup === 'BREAKOUT' && s.quote.price > resistance * 0.98) {
+      entry = resistance + 0.2 * atrVal;
+      setup = 'BREAKOUT';
+    } else if (s.setup === 'PULLBACK') {
+      entry = ema20Last;
+      setup = 'PULLBACK';
+    } else if (hasNews) {
+      entry = s.quote.price;
+      setup = 'NEWS-DRIVEN';
+    } else {
+      entry = (ema20Last + s.quote.price) / 2;
+    }
+    const stop = entry - 0.8 * atrVal;
+    const sell = entry + 1.2 * atrVal;
+    const rr = entry > stop ? (sell - entry) / (entry - stop) : 0;
+    return {
+      ticker: s.ticker,
+      setup,
+      entry: Math.round(entry * 100) / 100,
+      sellTarget: Math.round(sell * 100) / 100,
+      stopLoss: Math.round(stop * 100) / 100,
+      hold: '1–2 days',
+      rr: Math.round(rr * 10) / 10,
+      confidence: s.confidence,
+      why: s.why.slice(0, 2),
+      riskFlags: s.riskFlags.slice(0, 1),
+    };
+  }).filter((x) => x.rr >= 1.2).slice(0, 3);
+
   const tomorrowPlan: TomorrowPlanSetup[] = top5.map((s) => {
     const atrVal = atr(s.bars, 14) || s.quote.price * 0.02;
     const closes = s.bars.map((x) => x.c);
@@ -212,8 +262,11 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
       entryLow = Math.max(s.quote.price - 0.5 * atrVal, ema20Last - 0.5 * atrVal);
       entryHigh = Math.min(s.quote.price + 0.5 * atrVal, ema20Last + 0.5 * atrVal);
     }
-    const stop = (entryLow + entryHigh) / 2 - 1.2 * atrVal;
-    const target = (entryLow + entryHigh) / 2 + 1.5 * atrVal;
+    const entryMid = (entryLow + entryHigh) / 2;
+    const stop = entryMid - 1.2 * atrVal;
+    const sellTarget = entryMid + 1.5 * atrVal;
+    const tp1 = entryMid + 1.0 * atrVal;
+    const tp2 = entryMid + 2.0 * atrVal;
 
     const hold = regime === 'BULL' && s.setup === 'TREND' ? '1–3 weeks' : '3–7 days';
 
@@ -221,13 +274,13 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
       ticker: s.ticker,
       setup: s.setup,
       entryZone: { low: Math.round(entryLow * 100) / 100, high: Math.round(entryHigh * 100) / 100 },
-      sellTarget: Math.round(target * 100) / 100,
+      sellTarget: Math.round(sellTarget * 100) / 100,
       stopLoss: Math.round(stop * 100) / 100,
       hold,
       confidence: s.confidence,
       why: s.why.slice(0, 2),
       riskFlags: s.riskFlags.slice(0, 1),
-      tpDetail: { tp1: Math.round(target * 0.7 * 100) / 100, tp2: Math.round(target * 100) / 100 },
+      tpDetail: { tp1: Math.round(tp1 * 100) / 100, tp2: Math.round(tp2 * 100) / 100 },
     };
   });
 
@@ -262,6 +315,7 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
     asOfClose: `${ptDateStr}T21:00:00.000Z`,
     regime,
     summary5,
+    intradayPlan,
     tomorrowPlan,
     trendingStrong,
     picks: { week: picksWeek, month: picksMonth, year: picksYear },

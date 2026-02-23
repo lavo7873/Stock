@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-
-const COOKIE_NAME = 'psr_admin';
+import { SESSION_COOKIE_NAME } from '@/lib/sessionCookie';
 
 function clearAuth(res: NextResponse) {
-  res.cookies.set(COOKIE_NAME, '', { path: '/', maxAge: 0 });
+  res.cookies.set(SESSION_COOKIE_NAME, '', { path: '/', maxAge: 0 });
 }
 
 export async function GET(req: Request) {

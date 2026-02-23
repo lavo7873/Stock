@@ -38,6 +38,19 @@ export interface TPDetail {
   tp2?: number;
 }
 
+export interface IntradayPlanSetup {
+  ticker: string;
+  setup: 'BREAKOUT' | 'PULLBACK' | 'NEWS-DRIVEN';
+  entry: number;
+  sellTarget: number;
+  stopLoss: number;
+  hold: string;
+  rr: number;
+  confidence: 'LOW' | 'MEDIUM' | 'HIGH';
+  why: string[];
+  riskFlags: string[];
+}
+
 export interface TomorrowPlanSetup {
   ticker: string;
   setup: 'TREND' | 'PULLBACK' | 'BREAKOUT';
@@ -63,6 +76,7 @@ export interface ReportPayload {
   asOfClose: string;
   regime: string;
   summary5: string[];
+  intradayPlan: IntradayPlanSetup[];
   tomorrowPlan: TomorrowPlanSetup[];
   trendingStrong: TrendingStock[];
   picks: {

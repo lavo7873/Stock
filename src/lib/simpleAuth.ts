@@ -1,45 +1,44 @@
 import { cookies } from 'next/headers';
+import bcrypt from 'bcryptjs';
+import { createSessionToken, verifySessionToken, SESSION_COOKIE_NAME, SESSION_COOKIE_MAX_AGE } from './sessionCookie';
 
-const ADMIN_USER = (process.env.ADMIN_USER ?? 'admin').trim();
-const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD ?? '').replace(/^["']|["']$/g, '');
-const COOKIE_NAME = 'psr_admin';
-const COOKIE_SECRET = process.env.NEXTAUTH_SECRET ?? 'dev-secret';
-
-export function verifyPassword(password: string): boolean {
-  if (!ADMIN_PASSWORD) return false;
-  return password === ADMIN_PASSWORD;
-}
+const ADMIN_USERNAME = (process.env.ADMIN_USERNAME ?? process.env.ADMIN_USER ?? 'admin').trim();
+const ADMIN_PASSWORD_HASH = (process.env.ADMIN_PASSWORD_HASH ?? '').trim();
 
 export function checkUser(username: string): boolean {
-  return username === ADMIN_USER;
+  return username === ADMIN_USERNAME;
 }
 
-export async function setAuthCookie() {
+export async function verifyPassword(password: string): Promise<boolean> {
+  if (!ADMIN_PASSWORD_HASH || !password) return false;
+  try {
+    return await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+  } catch {
+    return false;
+  }
+}
+
+export async function setAuthCookie(username: string): Promise<void> {
+  const token = await createSessionToken(username);
   const cookieStore = await cookies();
-  const token = Buffer.from(`${COOKIE_SECRET}:admin:${Date.now()}`).toString('base64');
-  cookieStore.set(COOKIE_NAME, token, {
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 24 * 60 * 60,
+    maxAge: SESSION_COOKIE_MAX_AGE,
   });
 }
 
-export async function removeAuthCookie() {
+export async function removeAuthCookie(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.delete(SESSION_COOKIE_NAME);
 }
 
 export async function hasAuth(): Promise<boolean> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return false;
-  try {
-    const decoded = Buffer.from(token, 'base64').toString();
-    const [, user] = decoded.split(':');
-    return user === 'admin';
-  } catch {
-    return false;
-  }
+  const { valid } = await verifySessionToken(token);
+  return valid;
 }

@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { checkUser, verifyPassword } from '@/lib/simpleAuth';
-
-const COOKIE_NAME = 'psr_admin';
-const COOKIE_SECRET = process.env.NEXTAUTH_SECRET ?? 'dev-secret';
+import { checkUser, verifyPassword, setAuthCookie } from '@/lib/simpleAuth';
 
 export async function POST(req: Request) {
   try {
@@ -14,23 +11,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing username or password' }, { status: 400 });
     }
 
-    if (!checkUser(username) || !verifyPassword(password)) {
+    if (!checkUser(username) || !(await verifyPassword(password))) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const token = Buffer.from(`${COOKIE_SECRET}:admin:${Date.now()}`).toString('base64');
-    const isProd = process.env.NODE_ENV === 'production';
-
-    const res = NextResponse.json({ ok: true });
-    res.cookies.set(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 24 * 60 * 60,
-    });
-
-    return res;
+    await setAuthCookie(username);
+    return NextResponse.json({ ok: true });
   } catch (e) {
     console.error('Login error:', e);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });

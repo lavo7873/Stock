@@ -19,11 +19,12 @@ cp .env.example .env.local
 ```
 
 **Auth**
-- `ADMIN_EMAIL` – Your admin email (must match exactly to log in)
+- `ADMIN_USERNAME` – Admin username (must match exactly to log in). Fallback: `ADMIN_USER`
 - `ADMIN_PASSWORD_HASH` – bcrypt hash: `node scripts/hash-password.js "your-password"`
-- `NEXTAUTH_SECRET` – `openssl rand -base64 32`
-- `NEXTAUTH_URL` – `http://localhost:3000` (dev) or `https://your-app.vercel.app` (prod). On Vercel, `VERCEL_URL` is auto-used if not set
-- `CRON_SECRET` – Random string for cron auth
+- `COOKIE_SIGNING_SECRET` – Secret for HMAC-signed session cookie (e.g. `openssl rand -base64 32`)
+- `NEXTAUTH_SECRET` – Fallback if `COOKIE_SIGNING_SECRET` not set
+- `NEXTAUTH_URL` – `http://localhost:3000` (dev) or `https://your-app.vercel.app` (prod)
+- `CRON_SECRET` – Random string for cron auth (x-cron-secret or Authorization: Bearer)
 
 **Supabase**
 - Run `supabase-migration.sql` in Supabase SQL Editor

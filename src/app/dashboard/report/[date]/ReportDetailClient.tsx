@@ -25,6 +25,7 @@ export default function ReportDetailClient({ date, report }: ReportDetailClientP
   }
 
   const p = report.payload;
+  const intradayPlan = p.intradayPlan ?? [];
   const plan = p.tomorrowPlan ?? [];
 
   return (
@@ -48,6 +49,36 @@ export default function ReportDetailClient({ date, report }: ReportDetailClientP
           </ul>
         </div>
 
+        {intradayPlan.length > 0 && (
+          <section>
+            <h2 className="text-lg font-semibold text-[#22c55e] mb-4 font-mono">
+              Intraday (1–2 days)
+            </h2>
+            <div className="space-y-6">
+              {intradayPlan.map((item, i) => (
+                <div key={i} className="rounded-2xl border border-[#30363d] bg-[#161b22] p-6">
+                  <h3 className="text-[#22c55e] font-mono font-bold text-xl mb-4">{item.ticker}</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono text-sm mb-4">
+                    <div><span className="text-[#8b949e]">Buy:</span> {formatPrice(item.entry)}</div>
+                    <div><span className="text-[#8b949e]">Sell:</span> {formatPrice(item.sellTarget)}</div>
+                    <div><span className="text-[#8b949e]">Stop:</span> {formatPrice(item.stopLoss)}</div>
+                    <div><span className="text-[#8b949e]">R/R:</span> {item.rr}</div>
+                  </div>
+                  <p className="text-[#8b949e] text-sm font-mono mb-2">Hold: {item.hold} · Confidence: {item.confidence}</p>
+                  <ul className="list-disc list-inside text-sm mb-2">
+                    {item.why.map((w, j) => (
+                      <li key={j}>{w}</li>
+                    ))}
+                  </ul>
+                  {item.riskFlags.length > 0 && (
+                    <p className="text-amber-400 text-sm font-mono">Risk: {item.riskFlags.join(' · ')}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section>
           <h2 className="text-lg font-semibold text-[#22c55e] mb-4 font-mono">
             Tomorrow Plan (Full Detail)
@@ -68,9 +99,12 @@ export default function ReportDetailClient({ date, report }: ReportDetailClientP
                   <div><span className="text-[#8b949e]">Hold:</span> {item.hold}</div>
                 </div>
                 {item.tpDetail && (
-                  <p className="text-[#8b949e] text-sm font-mono mb-2">
-                    TP1: {formatPrice(item.tpDetail.tp1 ?? 0)} · TP2: {formatPrice(item.tpDetail.tp2 ?? 0)}
-                  </p>
+                  <details className="mt-2">
+                    <summary className="text-[#8b949e] text-sm font-mono cursor-pointer hover:text-[#22c55e]">Details (TP1/TP2)</summary>
+                    <p className="text-[#8b949e] text-sm font-mono mt-2 pl-4">
+                      TP1: {formatPrice(item.tpDetail.tp1 ?? 0)} · TP2: {formatPrice(item.tpDetail.tp2 ?? 0)}
+                    </p>
+                  </details>
                 )}
                 <p className="text-[#8b949e] text-sm font-mono mb-2">Confidence: {item.confidence}</p>
                 <ul className="list-disc list-inside text-sm mb-2">
