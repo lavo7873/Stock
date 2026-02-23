@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0d1117;
+  --foreground: #c9d1d9;
+  --accent: #22c55e;
+  --muted: #8b949e;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+.font-mono-num {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
