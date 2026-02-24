@@ -125,13 +125,7 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
       quotes[t] = q;
       barsMap[t] = b;
     })
-  );
-
-  for (const t of tickers.slice(0, 10)) {
-    newsMap[t] = await getNews(t, 1);
-  }
-
-  const spyQuote = quotes.SPY;
+  );  const spyQuote = quotes.SPY;
   const regime = getRegime(spyQuote?.changePercent ?? 0);
 
   const scored: Array<{
@@ -173,11 +167,7 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
     if (ema20 > ema50) why.push('EMA20 above EMA50');
     if (rsiVal != null && rsiVal > 40 && rsiVal < 70) why.push('RSI in healthy zone');
     if (macdVal && macdVal.macd > macdVal.signal) why.push('MACD bullish');
-    if (mom1w != null && mom1w > 0) why.push('Positive 1w momentum');
-    const news = newsMap[ticker];
-    if (news?.length) why.push('Recent news flow');
-
-    const riskFlags: string[] = [];
+    if (mom1w != null && mom1w > 0) why.push('Positive 1w momentum');    const riskFlags: string[] = [];
     if (rsiVal != null && rsiVal > 70) riskFlags.push('RSI overbought');
     if (mom1m != null && mom1m < -5) riskFlags.push('Weak 1m momentum');
 
@@ -203,6 +193,14 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
   }
 
   scored.sort((a, b) => b.score - a.score);
+  const top20Tickers = scored.slice(0, 20).map((s) => s.ticker);
+  for (const t of top20Tickers) {
+    newsMap[t] = await getNews(t, 1);
+  }
+  for (const s of scored) {
+    if (newsMap[s.ticker]?.length) s.why.push('Recent news flow');
+  }
+
   const top5 = scored.slice(0, 5);
 
   const intradayCandidates = scored.filter((s) => {
@@ -234,6 +232,9 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
     const stop = entry - 0.8 * atrVal;
     const sell = entry + 1.2 * atrVal;
     const rr = entry > stop ? (sell - entry) / (entry - stop) : 0;
+    let confidence: 'HIGH' | 'MEDIUM' | 'LOW' = s.confidence;
+    if (setup === 'BREAKOUT' && rr >= 1.5) confidence = 'HIGH';
+    else if (setup === 'NEWS-DRIVEN') confidence = 'MEDIUM';
     return {
       ticker: s.ticker,
       setup,
@@ -242,7 +243,7 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
       stopLoss: Math.round(stop * 100) / 100,
       hold: '1–2 days',
       rr: Math.round(rr * 10) / 10,
-      confidence: s.confidence,
+      confidence,
       why: s.why.slice(0, 2),
       riskFlags: s.riskFlags.slice(0, 1),
     };

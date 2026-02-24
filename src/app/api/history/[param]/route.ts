@@ -7,11 +7,11 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ param: string }> }
+  { params }: { params: { param: string } }
 ) {
   if (!(await hasAuth())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { param } = await params;
+  const { param } = params;
 
   if (!DATE_REGEX.test(param)) {
     return NextResponse.json({ error: 'Invalid date format (use YYYY-MM-DD)' }, { status: 400 });
@@ -37,7 +37,7 @@ export async function GET(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ param: string }> }
+  { params }: { params: { param: string } }
 ) {
   if (!(await hasAuth())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
