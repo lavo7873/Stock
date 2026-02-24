@@ -73,18 +73,9 @@ export async function GET(req: Request) {
   if (!checkAuth(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!isInWrapWindow()) {
-    return NextResponse.json({ skipped: true, reason: 'Outside wrap window (PT 1:05pm–1:25pm)' });
-  }
-  try {
-    const ptDateStr = getTargetReportDate();
-    const result = await doWrap(ptDateStr);
-    return NextResponse.json(result);
-  } catch (e) {
-    console.error('Wrap error:', e);
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json({
+    ok: true,
+    inWindow: isInWrapWindow(),
+    ptDate: getTargetReportDate(),
+  });
 }
