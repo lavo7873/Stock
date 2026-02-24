@@ -41,7 +41,7 @@ export async function DELETE(
 ) {
   if (!(await hasAuth())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { param } = await params;
+  const { param } = params;
 
   if (!UUID_REGEX.test(param)) {
     return NextResponse.json({ error: 'Invalid id format (use UUID)' }, { status: 400 });
