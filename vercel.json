@@ -1,5 +1,1 @@
-{
-  "crons": [
-    { "path": "/api/cron/wrapdaily-run", "schedule": "*/15 * * * *" }
-  ]
-}
+{"crons":[{"path":"/api/cron/wrapdaily-run","schedule":"10 20 * * *"}]}
