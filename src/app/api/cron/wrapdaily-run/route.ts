@@ -3,16 +3,11 @@ import { getTargetReportDate, isInWrapWindow } from '@/lib/ptDate';
 import { runWrapDaily } from '@/lib/runWrapDaily';
 
 function checkAuth(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-
-  const auth = req.headers.get('authorization') || '';
+  const auth = req.headers.get('authorization') ?? '';
   const bearer = auth.replace(/^Bearer\s+/i, '').trim();
-
-  const url = new URL(req.url);
-  const query = (url.searchParams.get('secret') || '').trim();
-
-  return bearer === secret || query === secret;
+  const query = new URL(req.url).searchParams.get('secret')?.trim() ?? '';
+  const secret = process.env.CRON_SECRET ?? '';
+  return secret.length > 0 && (bearer === secret || query === secret);
 }
 
 export async function GET(req: Request) {
