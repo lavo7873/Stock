@@ -22,6 +22,7 @@ export async function GET(
     .select('*')
     .eq('type', 'daily')
     .eq('report_date', param)
+    .eq('status', 'locked')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(1)

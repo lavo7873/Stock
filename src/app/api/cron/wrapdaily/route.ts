@@ -14,12 +14,13 @@ async function doWrap(ptDateStr: string) {
     .select('id')
     .eq('type', 'daily')
     .eq('report_date', ptDateStr)
+    .eq('status', 'locked')
     .is('deleted_at', null)
     .limit(1)
     .maybeSingle();
 
   if (existing) {
-    return { skipped: true, reason: 'already locked for date' };
+    return { skipped: true, reason: 'already exists locked' };
   }
 
   const payload = await runDailyWrap(ptDateStr);
@@ -33,7 +34,7 @@ async function doWrap(ptDateStr: string) {
 
   if (error) {
     if (error.code === '23505') {
-      return { skipped: true, reason: 'already locked for date' };
+      return { skipped: true, reason: 'already exists locked' };
     }
     throw new Error(error.message);
   }

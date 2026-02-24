@@ -74,6 +74,7 @@ export function getRegime(spyChange: number): string {
 
 /** Demo payload when no API keys – shows sample data for UI testing */
 export function getDemoPayload(ptDateStr: string): ReportPayload {
+  void ptDateStr;
   const demoIntraday: IntradayPlanSetup[] = [
     { ticker: 'NVDA', setup: 'BREAKOUT', entry: 141.5, sellTarget: 145.2, stopLoss: 138.8, hold: '1–2 days', rr: 1.5, confidence: 'MEDIUM', why: ['Momentum strong', 'Volume spike'], riskFlags: [] },
     { ticker: 'AMD', setup: 'PULLBACK', entry: 142.0, sellTarget: 146.4, stopLoss: 139.2, hold: '1–2 days', rr: 1.6, confidence: 'HIGH', why: ['EMA20 support', 'RSI healthy'], riskFlags: [] },
@@ -94,7 +95,7 @@ export function getDemoPayload(ptDateStr: string): ReportPayload {
     summary: p.why[0] ?? 'Strong technicals',
   }));
   return {
-    asOfClose: `${ptDateStr}T21:00:00.000Z`,
+    asOfClose: new Date().toISOString(),
     regime: 'NEUTRAL',
     summary5: [
       'Market regime: NEUTRAL (demo)',
@@ -312,7 +313,7 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
   ];
 
   return {
-    asOfClose: `${ptDateStr}T21:00:00.000Z`,
+    asOfClose: new Date().toISOString(),
     regime,
     summary5,
     intradayPlan,
