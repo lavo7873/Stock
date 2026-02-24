@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/wrapdaily",
+      "path": "/api/cron/wrapdaily-run?secret=__CRON_SECRET__",
       "schedule": "*/15 * * * *"
     }
   ]
