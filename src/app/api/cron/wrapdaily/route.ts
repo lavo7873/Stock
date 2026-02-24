@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const ptDateStr = getTargetReportDate();
     const result = await runWrapDaily(ptDateStr);
     if (result.skipped) {
-      return NextResponse.json({ skipped: true, reason: result.reason ?? 'already exists locked' });
+      return NextResponse.json({ skipped: true, reason: result.reason ?? 'already_exists_locked' });
     }
     return NextResponse.json({ ok: true, report_date: ptDateStr, summary: result.summary });
   } catch (e) {

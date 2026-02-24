@@ -20,7 +20,7 @@ export async function runWrapDaily(ptDate: string): Promise<RunWrapDailyResult> 
     .maybeSingle();
 
   if (existing) {
-    return { inserted: false, skipped: true, reason: 'already exists locked' };
+    return { inserted: false, skipped: true, reason: 'already_exists_locked' };
   }
 
   const payload = await runDailyWrap(ptDate);
