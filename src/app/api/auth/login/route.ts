@@ -5,10 +5,17 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const username = String(body?.username ?? '').trim();
-    const password = body?.password ?? '';
+    const password = String(body?.password ?? '').trim();
 
     if (!username || !password) {
       return NextResponse.json({ error: 'Missing username or password' }, { status: 400 });
+    }
+
+    // Debug: check if env vars are loaded (Vercel Logs)
+    const hasUser = !!process.env.ADMIN_USERNAME;
+    const hasPass = !!process.env.ADMIN_PASSWORD;
+    if (!hasUser || !hasPass) {
+      console.warn('[auth] ENV missing:', { hasUser, hasPass });
     }
 
     if (!checkUser(username) || !(await verifyPassword(password))) {
