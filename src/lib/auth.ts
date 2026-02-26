@@ -1,9 +1,8 @@
 import NextAuth, { getServerSession, type AuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
 
-const adminUser = process.env.ADMIN_USER ?? '';
-const adminHash = process.env.ADMIN_PASSWORD_HASH ?? '';
+const adminUser = (process.env.ADMIN_USERNAME ?? process.env.ADMIN_USER ?? 'admin').trim();
+const adminPassword = (process.env.ADMIN_PASSWORD ?? '').trim();
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -16,9 +15,7 @@ export const authOptions: AuthOptions = {
         const username = (credentials?.username as string)?.trim?.() ?? '';
         const password = credentials?.password as string;
         if (!username || !password) return null;
-        if (username !== adminUser.trim()) return null;
-        if (!adminHash) return null;
-        const ok = await bcrypt.compare(password, adminHash);
+        const ok = username === adminUser && adminPassword !== '' && password === adminPassword;
         if (!ok) return null;
         return { id: 'admin', email: username, name: 'Admin' };
       },

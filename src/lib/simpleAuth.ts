@@ -1,21 +1,16 @@
 import { cookies } from 'next/headers';
-import bcrypt from 'bcryptjs';
 import { createSessionToken, verifySessionToken, SESSION_COOKIE_NAME, SESSION_COOKIE_MAX_AGE } from './sessionCookie';
 
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME ?? process.env.ADMIN_USER ?? 'admin').trim();
-const ADMIN_PASSWORD_HASH = (process.env.ADMIN_PASSWORD_HASH ?? '').trim();
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD ?? '').trim();
 
 export function checkUser(username: string): boolean {
   return username === ADMIN_USERNAME;
 }
 
 export async function verifyPassword(password: string): Promise<boolean> {
-  if (!ADMIN_PASSWORD_HASH || !password) return false;
-  try {
-    return await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-  } catch {
-    return false;
-  }
+  if (!password) return false;
+  return ADMIN_PASSWORD !== '' && password === ADMIN_PASSWORD;
 }
 
 export async function setAuthCookie(username: string): Promise<void> {
