@@ -19,6 +19,7 @@ export default function DashboardClient() {
   const [history, setHistory] = useState<ReportRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [runTarget, setRunTarget] = useState<'today' | 'tomorrow'>('tomorrow');
 
   useEffect(() => {
     let cancelled = false;
@@ -63,8 +64,10 @@ export default function DashboardClient() {
       const timeout = setTimeout(() => controller.abort(), 65000);
       const res = await fetch('/api/run-wrap', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         signal: controller.signal,
+        body: JSON.stringify({ target: runTarget }),
       });
       clearTimeout(timeout);
       const data = await res.json().catch(() => ({}));
@@ -128,6 +131,15 @@ export default function DashboardClient() {
           >
             Notes
           </Link>
+          <select
+            value={runTarget}
+            onChange={(e) => setRunTarget(e.target.value as 'today' | 'tomorrow')}
+            className="px-2 py-1.5 bg-[#0d1117] border border-[#30363d] rounded text-[#c9d1d9] font-mono text-sm"
+            disabled={running}
+          >
+            <option value="today">Hôm nay</option>
+            <option value="tomorrow">Ngày mai</option>
+          </select>
           <button
             onClick={handleRunWrap}
             disabled={running}

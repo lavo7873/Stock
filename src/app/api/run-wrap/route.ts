@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { hasAuth } from '@/lib/simpleAuth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { runDailyWrap } from '@/lib/wrapEngine';
-import { getTargetReportDate } from '@/lib/ptDate';
+import { getTargetReportDate, getTodayPtDate } from '@/lib/ptDate';
 
 /** Allow up to 60s for wrap (market/news API calls). Vercel Hobby: max 60s, Pro: up to 300s. */
 export const maxDuration = 60;
@@ -13,15 +13,23 @@ function isSupabaseConfigured(): boolean {
   return !!(url && key && !url.includes('placeholder') && key !== 'placeholder');
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   if (!(await hasAuth())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let reportDate: string;
+  try {
+    const body = await req.json().catch(() => ({}));
+    const target = body?.target === 'today' ? 'today' : 'tomorrow';
+    reportDate = target === 'today' ? getTodayPtDate() : getTargetReportDate();
+  } catch {
+    reportDate = getTargetReportDate();
   }
 
   const supabaseOk = isSupabaseConfigured();
 
   try {
-    const reportDate = getTargetReportDate();
     const payload = await runDailyWrap(reportDate);
 
     if (!supabaseOk) {

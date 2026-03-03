@@ -19,7 +19,12 @@ export function isInWrapWindow(): boolean {
   return totalMins >= 785 && totalMins <= 805;
 }
 
-/** Report date for wrap: next trading day. Mon-Thu +1, Fri +3, Sat +2, Sun +1 */
+/** Today's date in PT (YYYY-MM-DD). For "do doÃ¡n hÃ´m nay". */
+export function getTodayPtDate(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+}
+
+/** Report date for wrap: next trading day. Mon-Thu +1, Fri +3, Sat +2, Sun +1. For cron + "do doÃ¡n ngÃ y mai". */
 export function getTargetReportDate(): string {
   const now = new Date();
   const ptDateStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
