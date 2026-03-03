@@ -4,6 +4,9 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { runDailyWrap } from '@/lib/wrapEngine';
 import { getTargetReportDate } from '@/lib/ptDate';
 
+/** Allow up to 60s for wrap (market/news API calls). Vercel Hobby: max 60s, Pro: up to 300s. */
+export const maxDuration = 60;
+
 function isSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';

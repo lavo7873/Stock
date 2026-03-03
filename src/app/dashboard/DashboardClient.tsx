@@ -59,7 +59,14 @@ export default function DashboardClient() {
     if (running) return;
     setRunning(true);
     try {
-      const res = await fetch('/api/run-wrap', { method: 'POST', credentials: 'include' });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 65000);
+      const res = await fetch('/api/run-wrap', {
+        method: 'POST',
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         const msg = data?.message ?? (data?.dryRun
@@ -74,8 +81,11 @@ export default function DashboardClient() {
       } else {
         alert(data?.error ?? 'Lỗi khi chạy wrap');
       }
-    } catch {
-      alert('Lỗi kết nối');
+    } catch (e) {
+      const msg = e instanceof Error && e.name === 'AbortError'
+        ? 'Timeout (65s). Wrap có thể mất nhiều thời gian. Thử lại sau.'
+        : 'Lỗi kết nối. Kiểm tra API keys (POLYGON/FINNHUB) trên Vercel.';
+      alert(msg);
     } finally {
       setRunning(false);
     }
