@@ -1,1 +1,1 @@
-{"crons":[{"path":"/api/cron/wrapdaily-run","schedule":"10 20 * * *"}]}
+{"crons":[{"path":"/api/cron/wrapdaily-run","schedule":"10 20 * * *"}],"functions":{"src/app/api/run-wrap/route.ts":{"maxDuration":60}}}

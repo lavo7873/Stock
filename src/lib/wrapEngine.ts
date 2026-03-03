@@ -125,7 +125,9 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
       quotes[t] = q;
       barsMap[t] = b;
     })
-  );  const spyQuote = quotes.SPY;
+  );
+
+  const spyQuote = quotes.SPY;
   const regime = getRegime(spyQuote?.changePercent ?? 0);
 
   const scored: Array<{
@@ -167,7 +169,9 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
     if (ema20 > ema50) why.push('EMA20 above EMA50');
     if (rsiVal != null && rsiVal > 40 && rsiVal < 70) why.push('RSI in healthy zone');
     if (macdVal && macdVal.macd > macdVal.signal) why.push('MACD bullish');
-    if (mom1w != null && mom1w > 0) why.push('Positive 1w momentum');    const riskFlags: string[] = [];
+    if (mom1w != null && mom1w > 0) why.push('Positive 1w momentum');
+
+    const riskFlags: string[] = [];
     if (rsiVal != null && rsiVal > 70) riskFlags.push('RSI overbought');
     if (mom1m != null && mom1m < -5) riskFlags.push('Weak 1m momentum');
 
@@ -194,9 +198,8 @@ export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
 
   scored.sort((a, b) => b.score - a.score);
   const top20Tickers = scored.slice(0, 20).map((s) => s.ticker);
-  for (const t of top20Tickers) {
-    newsMap[t] = await getNews(t, 1);
-  }
+  const newsResults = await Promise.all(top20Tickers.map((t) => getNews(t, 1)));
+  top20Tickers.forEach((t, i) => { newsMap[t] = newsResults[i] ?? null; });
   for (const s of scored) {
     if (newsMap[s.ticker]?.length) s.why.push('Recent news flow');
   }
