@@ -19,10 +19,12 @@ export async function POST(req: Request) {
   }
 
   let reportDate: string;
+  let quick = false;
   try {
     const body = await req.json().catch(() => ({}));
     const target = body?.target === 'today' ? 'today' : 'tomorrow';
     reportDate = target === 'today' ? getTodayPtDate() : getTargetReportDate();
+    quick = body?.quick === true;
   } catch {
     reportDate = getTargetReportDate();
   }
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
   const supabaseOk = isSupabaseConfigured();
 
   try {
-    const payload = await runDailyWrap(reportDate);
+    const payload = await runDailyWrap(reportDate, quick);
 
     if (!supabaseOk) {
       const isDemo = payload.summary5?.[0]?.includes('(demo)');

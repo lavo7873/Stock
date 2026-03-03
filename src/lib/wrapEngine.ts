@@ -112,12 +112,14 @@ export function getDemoPayload(ptDateStr: string): ReportPayload {
   };
 }
 
-export async function runDailyWrap(ptDateStr: string): Promise<ReportPayload> {
+const QUICK_TICKERS = ['SPY','QQQ','AAPL','NVDA','TSLA'];
+
+export async function runDailyWrap(ptDateStr: string, quick = false): Promise<ReportPayload> {
   const quotes: Record<string, Awaited<ReturnType<typeof getQuote>>> = {};
   const barsMap: Record<string, Awaited<ReturnType<typeof getBars>>> = {};
   const newsMap: Record<string, Awaited<ReturnType<typeof getNews>>> = {};
 
-  const tickers = [...STOCK_UNIVERSE];
+  const tickers = quick ? [...QUICK_TICKERS] : [...STOCK_UNIVERSE];
 
   await Promise.all(
     tickers.map(async (t) => {

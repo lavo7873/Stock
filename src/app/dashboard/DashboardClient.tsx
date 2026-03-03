@@ -67,7 +67,7 @@ export default function DashboardClient() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         signal: controller.signal,
-        body: JSON.stringify({ target: runTarget }),
+        body: JSON.stringify({ target: runTarget, quick: true }),
       });
       clearTimeout(timeout);
       const data = await res.json().catch(() => ({}));
